@@ -1,0 +1,24 @@
+{
+  "name": "brixi",
+  "version": "1.0.0",
+  "description": "AI-powered website builder that generates complete HTML pages based on simple text descriptions. No coding, no drag-and-drop — just type what you need, and get a ready-to-use web page",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AdelSrour/brixi.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/AdelSrour/brixi/issues"
+  },
+  "homepage": "https://github.com/AdelSrour/brixi#readme",
+  "workspaces": [
+    "apps/*"
+  ]
+}
