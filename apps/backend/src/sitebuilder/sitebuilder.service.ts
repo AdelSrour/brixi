@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
-export class AiService {
+export class SitebuilderService {
   private genAI: GoogleGenerativeAI;
 
   constructor(private configService: ConfigService) {
