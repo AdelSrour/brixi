@@ -9,9 +9,9 @@ export class SitebuilderController {
   @Post()
   async generate(
     @Body('prompt') prompt: string,
-    phoneNumber: string,
-    brandName: string,
-    color: string,
+    @Body('phoneNumber') phoneNumber: string,
+    @Body('brandName') brandName: string,
+    @Body('color') color: string,
   ): Promise<IBuilderResponse> {
     return await this.SitebuilderService.generateTemplate(
       prompt,
