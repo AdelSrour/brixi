@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  BadRequestException,
+} from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ConfigService } from '@nestjs/config';
 import { landing } from './templates/landing';
@@ -87,17 +91,13 @@ export class SitebuilderService {
       }
 
       // AI returned an error message
-      return {
-        status: false,
-        message: text,
-      };
+      throw new BadRequestException(text);
     } catch (error) {
-      // One or more operation has failed
-      console.log(error);
-      return {
-        status: false,
-        message: 'Oops! Looks like our AI is not available at the moment.',
-      };
+      // Let the error propagate to the global error handler middleware
+      throw new InternalServerErrorException(
+        error?.message ||
+          'Oops! Looks like our AI is not available at the moment.',
+      );
     }
   }
 
