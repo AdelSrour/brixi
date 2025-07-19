@@ -6,9 +6,56 @@ This backend powers the Brixi AI Website Builder. It receives user input, valida
 
 ---
 
+## Getting Started
+
+### 1. Clone the repository
+
+```sh
+git clone https://github.com/adelsrour/brixi.git
+cd brixi/apps/backend
+```
+
+### 2. Install dependencies
+
+```sh
+npm install
+```
+
+### 3. Configure environment variables
+
+Create `.env` and fill in your values:
+
+```env
+MONGODB_URI=mongodb://localhost:27017/brixi
+GEMINI_API_KEY=your_google_gemini_api_key
+CDN_UPLOAD_URL=https://yourCDN.com/endpoint
+CDN_SECRET_KEY=your_cdn_secret_key
+CDN_DOMAIN=yourCDNDomain.com
+PORT=3000
+```
+
+| Variable         | Required | Description                                                  |
+| ---------------- | -------- | ------------------------------------------------------------ |
+| `MONGODB_URI`    | Yes      | MongoDB connection string                                    |
+| `GEMINI_API_KEY` | Yes      | Google Generative AI API key                                 |
+| `CDN_UPLOAD_URL` | Yes      | URL to upload HTML files to CDN                              |
+| `CDN_SECRET_KEY` | Yes      | Secret key for authenticating CDN uploads                    |
+| `CDN_DOMAIN`     | Yes      | The domain used for serving user sites (e.g. brixi.adel.dev) |
+| `PORT`           | No       | Port to run the backend server (default: 3000)               |
+
+### 4. Start the server
+
+```sh
+npm run start
+```
+
+The API will be available at `http://localhost:3000/api/v1/sitebuilder`.
+
+---
+
 ## Endpoint Structure
 
-### `POST /sitebuilder/generate`
+### `POST /api/v1/sitebuilder`
 
 **Description:**  
 Generates a single-page website based on user input, uploads it to the CDN, and stores the site in MongoDB.
@@ -42,6 +89,7 @@ Generates a single-page website based on user input, uploads it to the CDN, and 
 ```json
 {
   "status": true,
+  "url": "https://technova-yourCDN.com",
   "message": "Your website has been created"
 }
 ```
@@ -87,17 +135,6 @@ erDiagram
 
 - **Collection:** `sites`
 - **Unique Index:** `siteName`
-
----
-
-## Environment Variables
-
-| Variable         | Required | Description                               |
-| ---------------- | -------- | ----------------------------------------- |
-| `MONGODB_URI`    | Yes      | MongoDB connection string                 |
-| `GEMINI_API_KEY` | Yes      | Google Generative AI API key              |
-| `CDN_UPLOAD_URL` | Yes      | URL to upload HTML files to CDN           |
-| `CDN_SECRET_KEY` | Yes      | Secret key for authenticating CDN uploads |
 
 ---
 
