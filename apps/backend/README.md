@@ -1,98 +1,135 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Brixi Backend API Documentation
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Overview
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+This backend powers the Brixi AI Website Builder. It receives user input, validates and sanitizes it, generates a landing page using Google Generative AI, uploads the HTML to a CDN, and stores site metadata in MongoDB.
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Endpoint Structure
 
-## Project setup
+### `POST /sitebuilder/generate`
 
-```bash
-$ npm install
+**Description:**  
+Generates a single-page website based on user input, uploads it to the CDN, and stores the site in MongoDB.
+
+**Request Body (JSON):**
+
+| Field       | Type   | Description                                                                                |
+| ----------- | ------ | ------------------------------------------------------------------------------------------ |
+| prompt      | string | User's prompt for the AI (10-200 chars, no special chars except comma)                     |
+| phoneNumber | string | Valid international phone number (E.164 format)                                            |
+| brandName   | string | Brand or site name (min 5 chars, no special chars)                                         |
+| color       | string | Color name, hex code, or comma-separated RGB (validated by regex)                          |
+| address     | string | Address (min 10 chars, allows letters, numbers, spaces, comma, period, apostrophe, hyphen) |
+| siteName    | string | Subdomain (3-20 chars, lowercase letters and numbers only, unique)                         |
+
+**Example Request:**
+
+```json
+{
+  "prompt": "Create a modern landing page for a tech startup, clean and minimal.",
+  "phoneNumber": "+1234567890",
+  "brandName": "TechNova",
+  "color": "#3498db",
+  "address": "123 Main St, San Francisco, CA",
+  "siteName": "technova"
+}
 ```
 
-## Compile and run the project
+**Example Success Response:**
 
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+```json
+{
+  "status": true,
+  "message": "Your website has been created"
+}
 ```
 
-## Run tests
+**Example Error Response:**
 
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+```json
+{
+  "statusCode": 400,
+  "message": "This subdomain is already taken, please choose another subdomain.",
+  "error": "Bad Request"
+}
 ```
 
-## Deployment
+---
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## Endpoint Flow
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+1. **Validation & Sanitization:**  
+   All fields are validated using DTOs and sanitized to prevent XSS and MongoDB injection.
+2. **AI Generation:**  
+   The prompt and user details are sent to Google Generative AI to generate HTML.
+3. **HTML Sanitization:**  
+   The generated HTML is sanitized to allow all tags and attributes but strips MongoDB injection patterns.
+4. **CDN Upload:**  
+   The HTML is uploaded as a file to the CDN via a secure endpoint.
+5. **MongoDB Storage:**  
+   If CDN upload is successful, the site HTML and metadata are stored in the `sites` collection.
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+---
+
+## MongoDB ERD
+
+```mermaid
+erDiagram
+    Site {
+      string siteName PK "Unique subdomain"
+      string html     "Sanitized HTML content"
+      date   createdAt
+      date   updatedAt
+    }
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+- **Collection:** `sites`
+- **Unique Index:** `siteName`
 
-## Resources
+---
 
-Check out a few resources that may come in handy when working with NestJS:
+## Environment Variables
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+| Variable         | Required | Description                               |
+| ---------------- | -------- | ----------------------------------------- |
+| `MONGODB_URI`    | Yes      | MongoDB connection string                 |
+| `GEMINI_API_KEY` | Yes      | Google Generative AI API key              |
+| `CDN_UPLOAD_URL` | Yes      | URL to upload HTML files to CDN           |
+| `CDN_SECRET_KEY` | Yes      | Secret key for authenticating CDN uploads |
 
-## Support
+---
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Middlewares Used
 
-## Stay in touch
+- **Helmet:**  
+  Sets HTTP headers for security (prevents common web vulnerabilities).
+- **Rate Limit Middleware:**  
+  Limits the number of requests per IP to prevent abuse and DoS attacks.
+- **XSS Clean Middleware:**  
+  (Optional) Sanitizes user input to prevent XSS attacks.
+- **Error Handler Middleware:**  
+  Catches and formats all errors, returning consistent error responses.
+- **ValidationPipe:**  
+  Globally validates and transforms incoming requests using DTOs.
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+**Why?**  
+These middlewares are used to protect the API from common attacks (XSS, DoS, HTTP header exploits), ensure data integrity, and provide clear error handling for clients.
 
-## License
+---
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## Security Notes
+
+- All user input is validated and sanitized.
+- Only sanitized HTML is stored and served.
+- Subdomain (`siteName`) is unique and strictly validated.
+- CDN uploads require a secret key for authentication.
+
+---
+
+## Contribution
+
+Feel free to open issues or PRs for improvements or bug fixes.
+
+---
