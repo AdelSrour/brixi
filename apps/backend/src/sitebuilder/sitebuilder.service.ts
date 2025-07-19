@@ -9,6 +9,9 @@ import { landing } from './templates/landing';
 import { IBuilderResponse } from './interfaces/builder-response';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Site } from './schemas/site.schema';
 
 @Injectable()
 export class SitebuilderService {
@@ -22,6 +25,7 @@ export class SitebuilderService {
   constructor(
     private configService: ConfigService,
     private httpService: HttpService,
+    @InjectModel(Site.name) private siteModel: Model<Site>,
   ) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY') ?? 'free';
     this.genAI = new GoogleGenerativeAI(apiKey);
@@ -46,6 +50,13 @@ export class SitebuilderService {
     siteName: string,
   ): Promise<IBuilderResponse> {
     try {
+      const existingSite = await this.siteModel.findOne({ siteName });
+      if (existingSite) {
+        throw new BadRequestException(
+          'This subdomain is already taken, please choose another subdomain.',
+        );
+      }
+
       const model = this.genAI.getGenerativeModel({
         model: 'gemini-2.0-flash',
       });
@@ -80,10 +91,12 @@ export class SitebuilderService {
         // Remove the markdown code block formatting from the HTML
         html = html.replace(/```(?:html)?\s*([\s\S]*?)\s*```/, '$1');
 
-        // Upload the HTML content to the CDN
-        const uploadResponse = await this.uploadCDN(siteName, html);
+        // Store in MongoDB
+        await this.siteModel.create({ siteName, html });
 
-        // Return response to client
+        // upload to CDN as well
+        await this.uploadCDN(siteName, html);
+
         return {
           status: true,
           message: 'Your website has been created',
