@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  telemetry: false, // disables telemetry if that's part of it
 };
 
 export default nextConfig;

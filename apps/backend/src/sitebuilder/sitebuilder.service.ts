@@ -103,6 +103,7 @@ export class SitebuilderService {
         return {
           status: true,
           message: 'Your website has been created',
+          url: `https://${siteName}-${this.configService.get<string>('CDN_DOMAIN')}`,
         };
       }
 
