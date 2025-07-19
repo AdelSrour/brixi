@@ -167,6 +167,13 @@ These middlewares are used to protect the API from common attacks (XSS, DoS, HTT
 
 ---
 
+## Frontend env
+
+```env
+NEXT_PUBLIC_SITEBUILDER_URL=https://APILINK.com/
+NEXT_PUBLIC_SITEBUILDER_SUBDOMAIN=domainName
+```
+
 ## Contribution
 
 Feel free to open issues or PRs for improvements or bug fixes.
