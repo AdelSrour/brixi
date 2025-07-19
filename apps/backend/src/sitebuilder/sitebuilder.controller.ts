@@ -12,12 +12,14 @@ export class SitebuilderController {
     @Body('phoneNumber') phoneNumber: string,
     @Body('brandName') brandName: string,
     @Body('color') color: string,
+    @Body('address') address: string,
   ): Promise<IBuilderResponse> {
     return await this.SitebuilderService.generateTemplate(
       prompt,
       phoneNumber,
       brandName,
       color,
+      address,
     );
   }
 }
