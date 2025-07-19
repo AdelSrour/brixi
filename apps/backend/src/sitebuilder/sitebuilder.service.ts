@@ -10,6 +10,11 @@ import { lastValueFrom } from 'rxjs';
 export class SitebuilderService {
   private genAI: GoogleGenerativeAI;
 
+  /**
+   * SitebuilderService constructor
+   * @param configService ConfigService to access environment variables
+   * @param httpService  HttpService to make HTTP requests
+   */
   constructor(
     private configService: ConfigService,
     private httpService: HttpService,
@@ -18,18 +23,30 @@ export class SitebuilderService {
     this.genAI = new GoogleGenerativeAI(apiKey);
   }
 
+  /**
+   * Generates a template based on the user's prompt and other details
+   * using the Google Generative AI service.
+   * @param prompt The user's prompt for the AI to generate a template
+   * @param phoneNumber The user's Phone Number
+   * @param brandName The user's Brand Name
+   * @param color The user's Brand Color
+   * @param address The user's Address
+   * @returns Response containing the generated template or an error message
+   */
   async generateTemplate(
     prompt: string,
     phoneNumber: string,
     brandName: string,
     color: string,
     address: string,
+    siteName: string,
   ): Promise<IBuilderResponse> {
     try {
       const model = this.genAI.getGenerativeModel({
         model: 'gemini-2.0-flash',
       });
 
+      // Generate the template settings using the landing template
       const templateSettings = landing(
         prompt,
         phoneNumber,
@@ -37,25 +54,45 @@ export class SitebuilderService {
         color,
         address,
       );
+
+      // Generate the content using the AI model with the template settings
       const result = await model.generateContent(templateSettings);
+
+      // Await the response from the AI model
       const response = await result.response;
-      let text = response.text();
-      text = text.replace(/```(?:html)?\s*([\s\S]*?)\s*```/, '$1');
-      const html = text.match(/```(?:html)?\s*([\s\S]*?)\s*```/i);
-      
-      if (!html) {
+
+      // Extract the text from the response
+      const text = response.text();
+
+      // Extract the HTML content from the text
+      let html: string | null = null;
+      const match = text.match(/```html\s*([\s\S]*?)\s*```/i);
+      if (match && match[1]) {
+        html = match[1];
+      }
+
+      // If HTML content is found
+      if (html) {
+        // Remove the markdown code block formatting from the HTML
+        html = html.replace(/```(?:html)?\s*([\s\S]*?)\s*```/, '$1');
+
+        // Upload the HTML content to the CDN
+        const uploadResponse = await this.uploadCDN(siteName, html);
+
+        // Return response to client
         return {
-          status: false,
-          message: text,
+          status: true,
+          message: 'Your website has been created',
         };
       }
 
-      await this.uploadCDN('test', text);
+      // AI returned an error message
       return {
-        status: true,
+        status: false,
         message: text,
       };
     } catch (error) {
+      // One or more operation has failed
       console.log(error);
       return {
         status: false,
@@ -64,6 +101,12 @@ export class SitebuilderService {
     }
   }
 
+  /**
+   * Uploads the HTML content to the CDN
+   * @param siteName The subdomain name of the site
+   * @param html The HTML content to upload
+   * @returns
+   */
   async uploadCDN(siteName: string, html: string) {
     const payload = {
       siteName,
