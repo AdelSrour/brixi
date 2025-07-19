@@ -12,6 +12,8 @@ import { lastValueFrom } from 'rxjs';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Site } from './schemas/site.schema';
+import { sanitizeUserHtml } from './utils/sanitize-html.util';
+import * as FormData from 'form-data';
 
 @Injectable()
 export class SitebuilderService {
@@ -58,10 +60,9 @@ export class SitebuilderService {
       }
 
       const model = this.genAI.getGenerativeModel({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
       });
 
-      // Generate the template settings using the landing template
       const templateSettings = landing(
         prompt,
         phoneNumber,
@@ -70,32 +71,34 @@ export class SitebuilderService {
         address,
       );
 
-      // Generate the content using the AI model with the template settings
       const result = await model.generateContent(templateSettings);
-
-      // Await the response from the AI model
       const response = await result.response;
-
-      // Extract the text from the response
       const text = response.text();
 
-      // Extract the HTML content from the text
+      //const text = '```html <!DOCTYPE html><h1>Hello</h1></html>```'; // Placeholder for actual AI response
+
       let html: string | null = null;
       const match = text.match(/```html\s*([\s\S]*?)\s*```/i);
       if (match && match[1]) {
         html = match[1];
       }
 
-      // If HTML content is found
       if (html) {
-        // Remove the markdown code block formatting from the HTML
         html = html.replace(/```(?:html)?\s*([\s\S]*?)\s*```/, '$1');
+        html = sanitizeUserHtml(html);
 
-        // Store in MongoDB
+        // Upload to CDN first
+        const cdnResponse = await this.uploadCDN(siteName, html);
+
+        if (!cdnResponse?.status) {
+          throw new BadRequestException(
+            cdnResponse?.message ||
+              'Failed to upload your website to CDN. Please try again.',
+          );
+        }
+
+        // Store in MongoDB only if CDN upload succeeded
         await this.siteModel.create({ siteName, html });
-
-        // upload to CDN as well
-        await this.uploadCDN(siteName, html);
 
         return {
           status: true,
@@ -103,10 +106,10 @@ export class SitebuilderService {
         };
       }
 
-      // AI returned an error message
       throw new BadRequestException(text);
     } catch (error) {
-      // Let the error propagate to the global error handler middleware
+      // console.error('Error generating template:', error);
+      if (error instanceof BadRequestException) throw error;
       throw new InternalServerErrorException(
         error?.message ||
           'Oops! Looks like our AI is not available at the moment.',
@@ -121,17 +124,29 @@ export class SitebuilderService {
    * @returns
    */
   async uploadCDN(siteName: string, html: string) {
-    const payload = {
-      siteName,
-      html,
-    };
+    const form = new FormData();
+    form.append('siteName', siteName);
+    // Send HTML as a file
+    form.append('file', Buffer.from(html, 'utf-8'), {
+      filename: `${siteName}.html`,
+      contentType: 'text/html',
+    });
 
-    const headers = {
-      'Content-Type': 'application/json',
-    };
+    // Add secret key from .env
+    const secretKey = this.configService.get<string>('CDN_SECRET_KEY');
+    if (secretKey) {
+      form.append('secretKey', secretKey);
+    }
+
+    const headers = form.getHeaders();
+
+    // Get CDN upload URL from .env via ConfigService
+    const cdnUrl =
+      this.configService.get<string>('CDN_UPLOAD_URL') ??
+      'https://localhost/cdnGateway.php';
 
     const response = await lastValueFrom(
-      this.httpService.post('https://brixi.adel.dev/uploadCDN.php', payload, {
+      this.httpService.post(cdnUrl, form, {
         headers,
       }),
     );

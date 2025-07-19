@@ -56,9 +56,9 @@ export class GenerateSiteDto {
 
   @IsString()
   @IsNotEmpty()
-  @Matches(/^[a-z0-9]+$/, {
+  @Matches(/^[a-z0-9]{3,20}$/, {
     message:
-      'Site name must be a valid subdomain (lowercase letters and numbers only, no hyphens or special characters)',
+      'Site name must be 3-20 characters, lowercase letters and numbers only (no hyphens or special characters)',
   })
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   siteName: string;
