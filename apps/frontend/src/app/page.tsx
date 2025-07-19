@@ -45,7 +45,7 @@ export default function Home() {
     phoneNumber: "",
     address: "",
     brandName: "",
-    color: "#6366F1", // Changed to indigo as default
+    color: "#6366F1",
     siteName: "",
   });
   const [apiError, setApiError] = useState<string | null>(null);
@@ -83,7 +83,7 @@ export default function Home() {
   const handlePromptSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (prompt.trim()) {
-      setFormData({ ...formData, prompt });
+      setFormData((prev) => ({ ...prev, prompt }));
       setShowForm(true);
       setApiError(null);
     }
@@ -95,14 +95,14 @@ export default function Home() {
     >
   ) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (apiError && name === "siteName") {
       setApiError(null);
     }
   };
 
   const handleColorChange = (color: { hex: string }) => {
-    setFormData({ ...formData, color: color.hex });
+    setFormData((prev) => ({ ...prev, color: color.hex }));
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -111,13 +111,16 @@ export default function Home() {
     setApiError(null);
 
     try {
-      const response = await fetch("http://localhost:3000/api/v1/sitebuilder", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SITEBUILDER_URL}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
 
       const data = await response.json();
 
@@ -238,7 +241,7 @@ export default function Home() {
                   <span className="text-sm font-medium">NO-CODE SOLUTION</span>
                 </div>
                 <h1 className="text-4xl md:text-5xl font-bold text-center mb-6 bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 to-pink-300">
-                  Build Your Perfect Landing Page
+                  Build Your Perfect Landing Website
                 </h1>
                 <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
                   Get a professional online presence in minutes with free domain
@@ -321,7 +324,8 @@ export default function Home() {
                         d="M5 13l4 4L19 7"
                       />
                     </svg>
-                    Free subdomain (yourname.example.com)
+                    Free subdomain (yourname
+                    {process.env.NEXT_PUBLIC_SITEBUILDER_SUBDOMAIN})
                   </li>
                   <li className="flex items-start">
                     <svg
@@ -403,9 +407,10 @@ export default function Home() {
                       type="text"
                       name="prompt"
                       value={formData.prompt}
-                      readOnly
+                      onChange={handleFormChange}
                       className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent backdrop-blur-sm"
                       autoComplete="off"
+                      placeholder="Describe your business or project..."
                     />
                   </div>
 
@@ -473,7 +478,7 @@ export default function Home() {
                         autoComplete="off"
                       />
                       <span className="inline-flex items-center px-4 text-sm text-gray-300 bg-gray-700 border border-l-0 border-gray-600 rounded-r-lg">
-                        .example.com
+                        -{process.env.NEXT_PUBLIC_SITEBUILDER_SUBDOMAIN}
                       </span>
                     </div>
                     <p className="mt-1.5 text-sm text-gray-400">
@@ -483,22 +488,6 @@ export default function Home() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
-                      <label className="block text-gray-300 mb-2 font-medium">
-                        Phone Number*
-                      </label>
-                      <input
-                        type="tel"
-                        name="phoneNumber"
-                        value={formData.phoneNumber}
-                        onChange={handleFormChange}
-                        className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent backdrop-blur-sm"
-                        required
-                        placeholder="+1 (123) 456-7890"
-                        autoComplete="off"
-                      />
-                    </div>
-
                     <div>
                       <label className="block text-gray-300 mb-2 font-medium">
                         Business Address*
@@ -511,6 +500,22 @@ export default function Home() {
                         required
                         rows={3}
                         placeholder="123 Main St, City, Country"
+                        autoComplete="off"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-300 mb-2 font-medium">
+                        Phone Number*
+                      </label>
+                      <input
+                        type="tel"
+                        name="phoneNumber"
+                        value={formData.phoneNumber}
+                        onChange={handleFormChange}
+                        className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent backdrop-blur-sm"
+                        required
+                        placeholder="+1 (123) 456-7890"
                         autoComplete="off"
                       />
                     </div>

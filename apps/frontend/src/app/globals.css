@@ -2,6 +2,8 @@
 
 /* Geist Sans is already loaded in your Next.js app, just reference the CSS variable */
 body {
+  font-family: var(--font-geist-sans), sans-serif;
+  font-feature-settings: "ss01"; /* Optional: stylistic set 1 for Geist */
 }
 
 /* Fluid responsive base sizing */
